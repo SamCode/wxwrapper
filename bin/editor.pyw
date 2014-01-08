@@ -28,44 +28,75 @@ class Editor(wx.App):
         wx.App.__init__(self)
 
         self.widgets = {}
-
-        # new window frame
-
-        # edit window frame
         self.active_window = None
 
     def run(self):
-        """Run the program."""
+        """Run the editor."""
 
-        self.init_gui()
+        # init Frame
+        self.frame = wx.Frame(None, title = "wxEditor", size = (400, 400))
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.frame.SetSizer(self.sizer)
+
+        # init rest of GUI
+        self.init_menus()
+        self.init_edit_main()
+        # self.init_edit_1()
+        # self.init_edit_2()
+
+        # show GUI
+        self.frame.Show()
+
+        # run wxPython
         self.MainLoop()
 
-    def init_gui(self):
-        """Set up editor GUI."""
+    def init_menus(self):
+        """Set up editor's menu bar."""
 
         # File menu
         file_menu = wx.Menu()
-        load_item = file_menu.Append(wx.ID_ANY, "&Load", 
+        load_item = file_menu.Append(
+            wx.ID_ANY,
+            "&Load", 
             "Open work previously saved using this program.")
-        save_item = file_menu.Append(wx.ID_ANY, "&Save", 
+        save_item = file_menu.Append(
+            wx.ID_ANY,
+            "&Save", 
             "Store your progress on your computer.")
         file_menu.AppendSeparator()
-        exit_item = file_menu.Append(wx.ID_EXIT, "E&xit", "Terminate the program.")
+        exit_item = file_menu.Append(
+            wx.ID_EXIT, 
+            "E&xit", 
+            "Terminate the program.")
 
-        # Init MenuBar instance.
+        # init MenuBar instance
         menu_bar = wx.MenuBar()
         menu_bar.Append(file_menu, "&File")
 
-        # Init wx.Frame instance.
-        self.frame = wx.Frame(None, title = "wxEditor", size = (400, 400))
+        # init wx.Frame instance
         self.frame.SetMenuBar(menu_bar)
         self.frame.CreateStatusBar()
 
-        # Bind events.
+        # bind events
         self.frame.Bind(wx.EVT_MENU, self.OnExit, exit_item)
 
-        # Show the app's GUI.
-        self.frame.Show()
+    def init_edit_main(self):
+        """..."""
+
+        left_half = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(left_half)
+
+        # ListBox of windows
+        windows = wx.ListBox(self.frame)
+        left_half.Add(windows)
+
+        right_half = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(right_half)
+
+        # new (Widget) button > dialog with ListBox of widget types
+        widgets = wx.ListBox(self.frame)
+        right_half.Add(widgets)
+        # listbox.InsertItems(sorted(Editor.WIDGETS.keys()), 0)
 
     def OnExit(self, e):
         self.frame.Close(True)
