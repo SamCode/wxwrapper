@@ -1,5 +1,41 @@
 import wx
-from wxwrapper import base
+
+class Window(object):
+    """A wrapper over a wx.Frame.
+
+    Instance variables:
+        frame - the wx.Frame that this Window represents
+        widgets - a dict in the format:
+            key - string representing the type of widget
+            value - a list, representing widgets of that type that are
+                    contained in this wx.Frame, of dicts in the format:
+                key - string representing a widget attribute
+                value - value of the attribute
+    """
+
+    def __init__(self, title, parent=None):
+        self.title = title
+        self.frame = wx.Frame(
+            parent, 
+            title = title,
+            style = 
+                wx.SYSTEM_MENU |
+                # wx.RESIZE_BORDER |
+                # wx.MINIMIZE_BOX |
+                # wx.MAXIMIZE_BOX |
+                wx.CLOSE_BOX |
+                wx.CAPTION | 
+                wx.CLIP_CHILDREN)
+        self.widgets = {t: [] for t in Editor.WIDGETS.keys()}
+
+    def render(self):
+        """Display the wx.Frame containing widgets configured as in 
+        self.widgets."""
+        self.frame.Fit()
+        self.frame.Show()
+
+    def hide(self):
+        self.frame.Hide()
 
 class Editor(wx.App):
     """...
@@ -9,14 +45,14 @@ class Editor(wx.App):
             they represent
 
     Instance variables:
-        windows - a list of base.Window instances
+        windows - a list of Window instances
         frame - the program's main wx.frame instance
+        windows_lb - 
     """
 
     WIDGETS = {
         "Button": wx.Button,
-        "Slider": wx.Slider,
-    }
+        "Slider": wx.Slider}
 
     def __init__(self):
         wx.App.__init__(self)
@@ -41,11 +77,8 @@ class Editor(wx.App):
                 wx.CAPTION | 
                 wx.CLIP_CHILDREN)
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        container = wx.BoxSizer(wx.HORIZONTAL)
-        container.AddSpacer((0, 0), 1, wx.EXPAND)
-        container.Add(self.sizer, 0, wx.EXPAND | wx.ALL, 5)
-        container.AddSpacer((0, 0), 1, wx.EXPAND)
-        self.frame.SetSizer(container)
+        self.frame.SetSizer(self.sizer)
+        self.frame.SetBackgroundColour(wx.Colour(255, 255, 255))
 
         # init rest of GUI
         self.init_menus()
@@ -99,8 +132,8 @@ class Editor(wx.App):
         l0 = wx.BoxSizer(wx.HORIZONTAL)
 
         l1 = wx.BoxSizer(wx.VERTICAL)
-        windows = wx.ListBox(self.frame)
-        l1.Add(windows)
+        self.windows_lb = wx.ListBox(self.frame)
+        l1.Add(self.windows_lb)
 
         l2 = wx.BoxSizer(wx.VERTICAL)
         windows_new = wx.Button(self.frame, wx.ID_ANY, "New")
@@ -149,8 +182,49 @@ class Editor(wx.App):
         self.sizer.AddSpacer((10, 0))
         self.sizer.Add(right_half)
 
+        self.frame.Bind(wx.EVT_BUTTON, self.OnNewWindow, windows_new)
+
     def OnExit(self, e):
+        """Exit the editor."""
+
         self.frame.Close(True)
+
+    def OnNewWindow(self, e):
+        """..."""
+
+        dialog = wx.Dialog(
+            None,
+            title = "New Window",
+            style = 
+                wx.DEFAULT_DIALOG_STYLE | 
+                wx.THICK_FRAME)
+
+        s0 = wx.BoxSizer(wx.VERTICAL)
+        s1 = wx.BoxSizer(wx.HORIZONTAL)
+
+        title_label = wx.StaticText(dialog, label = "Title")
+        title_entry = wx.TextCtrl(dialog)
+        ok = wx.Button(dialog, wx.ID_ANY, "OK")
+
+        s1.Add(title_entry)
+        s1.Add(ok)
+        s0.Add(title_label)
+        s0.Add(s1)
+
+        dialog.Bind(
+            wx.EVT_BUTTON, 
+            lambda e: dialog.EndModal(dialog.GetReturnCode()), 
+            ok)
+        dialog.SetSizer(s0)
+        dialog.Fit()
+        dialog.ShowModal()
+        
+        # occurs after dialog.EndModal() is called
+        dialog.Destroy()
+
+        window = Window(title = title_entry.GetValue())
+        self.windows.append(window)
+        self.windows_lb.Insert(window.title, 0)
 
 if __name__ == "__main__":
     app = Editor()
