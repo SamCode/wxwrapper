@@ -15,22 +15,27 @@ class App(object):
 	"""..."""
 
 class Widget(object):
-    """Represents a wx.Window."""
+    """Represents a wx.Window.
+
+    Instance variables:
+    	attrs - 
+    """
 
     def __init__(self, title):
         self.title = title
+        self.attrs = {}
 
 class Window(object):
     """A wrapper over a wx.Frame.
 
     Instance variables:
+    	title - title of the window
         frame - the wx.Frame that this Window represents
         widgets - a dict in the format:
             key - string representing the type of widget
-            value - a list of dicts representing widgets of that type that are
-                    contained in this wx.Frame in the format:
-                key - string representing a widget attribute
-                value - value of the attribute
+            value - a dict containing widgets of that type, in the format:
+                key - title of a widget
+                value - the Widget instance object
     """
 
     def __init__(self, title, parent=None):
@@ -46,7 +51,19 @@ class Window(object):
                 wx.CLOSE_BOX |
                 wx.CAPTION | 
                 wx.CLIP_CHILDREN)
-        self.widgets = {t: [] for t in WIDGETS.keys()}
+        self.widgets = {t: {} for t in WIDGETS.keys()}
+
+    def all_widgets(self, objects=False):
+    	"""..."""
+
+    	def f(x, y):
+    		z = x.copy()
+    		z.update(y)
+    		return z
+    	if objects:
+    		return reduce(f, self.widgets.itervalues())
+    	else:
+    		return reduce(f, self.widgets.itervalues()).keys()
 
     def render(self):
         """Display the wx.Frame containing widgets configured as in 
