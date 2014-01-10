@@ -1,63 +1,21 @@
 import wx
-
-class Window(object):
-    """A wrapper over a wx.Frame.
-
-    Instance variables:
-        frame - the wx.Frame that this Window represents
-        widgets - a dict in the format:
-            key - string representing the type of widget
-            value - a list, representing widgets of that type that are
-                    contained in this wx.Frame, of dicts in the format:
-                key - string representing a widget attribute
-                value - value of the attribute
-    """
-
-    def __init__(self, title, parent=None):
-        self.title = title
-        self.frame = wx.Frame(
-            parent, 
-            title = title,
-            style = 
-                wx.SYSTEM_MENU |
-                # wx.RESIZE_BORDER |
-                # wx.MINIMIZE_BOX |
-                # wx.MAXIMIZE_BOX |
-                wx.CLOSE_BOX |
-                wx.CAPTION | 
-                wx.CLIP_CHILDREN)
-        self.widgets = {t: [] for t in Editor.WIDGETS.keys()}
-
-    def render(self):
-        """Display the wx.Frame containing widgets configured as in 
-        self.widgets."""
-        self.frame.Fit()
-        self.frame.Show()
-
-    def hide(self):
-        self.frame.Hide()
+from wxwrapper import base
 
 class Editor(wx.App):
     """...
 
-    Class variables:
-        WIDGETS - a mapping from strings to the widget class objects that
-            they represent
-
     Instance variables:
-        windows - a list of Window instances
+        windows - a dict in the format:
+            key - string; Window identifier
+            value - Window instance
         frame - the program's main wx.frame instance
         windows_lb - 
     """
 
-    WIDGETS = {
-        "Button": wx.Button,
-        "Slider": wx.Slider}
-
     def __init__(self):
         wx.App.__init__(self)
 
-        self.windows = []
+        self.windows = {}
         self.active_window = None
 
     def run(self):
@@ -168,7 +126,6 @@ class Editor(wx.App):
         r2.Add(widgets_new)
         r2.Add(widgets_edit)
         r2.Add(widgets_del)
-        # listbox.InsertItems(sorted(Editor.WIDGETS.keys()), 0)
 
         r0.Add(r1)
         r0.Add(r2)
@@ -182,21 +139,52 @@ class Editor(wx.App):
         self.sizer.AddSpacer((10, 0))
         self.sizer.Add(right_half)
 
+        # bind events
+        self.frame.Bind(wx.EVT_LISTBOX, self.OnSelectWindow, self.windows_lb)
         self.frame.Bind(wx.EVT_BUTTON, self.OnNewWindow, windows_new)
+        self.frame.Bind(wx.EVT_BUTTON, self.OnDelWindow, windows_del)
+
+    def new_window(self, title):
+        """..."""
+
+        assert title not in self.windows
+        window = base.Window(title = title)
+        self.windows[title] = window
+        self.windows_lb.Insert(window.title, 0)
+
+    def get_selected_window(self):
+        """Returns the Window object represented by the selected item
+        in self.windows_lb."""
+
+        i = self.windows_lb.GetSelection()
+        if i is not wx.NOT_FOUND:
+            title = self.windows_lb.GetString(i)
+            return self.windows[title]
+
+    def del_selected_window(self):
+        """Remove references to the Window object represented by the
+        selected item in self.windows_lb."""
+
+        i = self.windows_lb.GetSelection()
+        if i is not wx.NOT_FOUND:
+            title = self.windows_lb.GetString(i)
+            del self.windows[title]
 
     def OnExit(self, e):
         """Exit the editor."""
 
         self.frame.Close(True)
+        exit()
 
     def OnNewWindow(self, e):
-        """..."""
+        """Create a dialog prompting the user to initialize a new window."""
 
         dialog = wx.Dialog(
             None,
             title = "New Window",
             style = 
-                wx.DEFAULT_DIALOG_STYLE | 
+                wx.CAPTION |
+                wx.SYSTEM_MENU |
                 wx.THICK_FRAME)
 
         s0 = wx.BoxSizer(wx.VERTICAL)
@@ -211,20 +199,39 @@ class Editor(wx.App):
         s0.Add(title_label)
         s0.Add(s1)
 
-        dialog.Bind(
-            wx.EVT_BUTTON, 
-            lambda e: dialog.EndModal(dialog.GetReturnCode()), 
-            ok)
+        def OnNewWindowOk(e):
+            title = title_entry.GetValue()
+            if title not in self.windows:
+                dialog.EndModal(dialog.GetReturnCode())
+                dialog.Destroy()
+                self.new_window(title)
+            else:
+                dialog.ShowModal()
+                # display error message
+
+        dialog.Bind(wx.EVT_BUTTON, OnNewWindowOk, ok)
         dialog.SetSizer(s0)
         dialog.Fit()
         dialog.ShowModal()
-        
-        # occurs after dialog.EndModal() is called
-        dialog.Destroy()
 
-        window = Window(title = title_entry.GetValue())
-        self.windows.append(window)
-        self.windows_lb.Insert(window.title, 0)
+    def OnDelWindow(self, e):
+        """..."""
+
+        self.del_selected_window()
+
+    def OnNewWidget(self, e):
+        """Create a dialog prompting the user to create a new widget
+        on the selected window."""
+
+        # request widget type
+        # listbox.InsertItems(sorted(base.WIDGETS.keys()), 0)
+        # request widget title (default is <widget_type><number>)
+
+    def OnSelectWindow(self, e):
+        """Update the widgets listbox for the selected window."""
+
+        window = self.get_selected_window()
+        self.widgets.lb.InsertItems(window.widgets.itervalues())
 
 if __name__ == "__main__":
     app = Editor()
