@@ -77,7 +77,14 @@ class Window(object):
         self.frame.Hide()
 
 class FormDialog(wx.Dialog):
-    """A wx.Dialog containing a form."""
+    """A wx.Dialog containing a form.
+
+    Instance variables:
+        fields - a dict in the format:
+            key - name of the form field
+            value - a dict with the keys "sizer", "label", and "entry"
+                mapped to their corresponding wx objects.
+    """
 
     def __init__(self, title):
         super(FormDialog, self).__init__(
@@ -88,36 +95,57 @@ class FormDialog(wx.Dialog):
                 wx.SYSTEM_MENU |
                 wx.THICK_FRAME)
 
-class NewWindowDialog(FormDialog):
-    """...
+        self.fields = {}
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-    Instance variables:
-        app
-        title_sizer
-        title_label
-        title_entry
-        ok
-    """
+    def init(self):
+        """..."""
+
+        self.ok = wx.Button(self, wx.ID_OK, "OK")
+        self.sizer.Add(self.ok, flag = wx.ALIGN_RIGHT)
+
+        self.SetSizer(self.sizer)
+        self.Fit()
+
+    def add_field(self, name, entry):
+        """Initialize a new field."""
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label = wx.StaticText(self, label = name)
+
+        sizer.AddSpacer((5, 0))
+        sizer.Add(label, flag = wx.ALIGN_CENTER)
+        sizer.AddSpacer((5, 0))
+        sizer.Add(entry)
+
+        self.fields[name] = {
+            "sizer": sizer,
+            "label": label,
+            "entry": entry}
+
+        self.sizer.Add(sizer)
+
+    def add_text_field(self, name):
+        """Initialize a new text entry."""
+
+        entry = wx.TextCtrl(self)
+        self.add_field(name, entry)
+
+    def add_menu_field(self, name, options):
+        """..."""
+
+        entry = wx.ComboBox(self)
+        entry.SetItems(options)
+        self.add_field(name, entry)
+
+class NewWindowDialog(FormDialog):
+    """..."""
 
     def __init__(self):
         super(NewWindowDialog, self).__init__("New Window")
 
-        s0 = wx.BoxSizer(wx.VERTICAL)
-        self.title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.title_label = wx.StaticText(self, label = "Title")
-        self.title_entry = wx.TextCtrl(self)
-        self.ok = wx.Button(self, wx.ID_ANY, "OK")
-
-        self.title_sizer.AddSpacer((5, 0))
-        self.title_sizer.Add(self.title_label, flag = wx.ALIGN_CENTER)
-        self.title_sizer.AddSpacer((5, 0))
-        self.title_sizer.Add(self.title_entry)
-        self.title_sizer.Add(self.ok)
-        s0.Add(self.title_sizer)
-
-        self.SetSizer(s0)
-        self.Fit()
+        self.add_text_field("Title")
+        self.init()
 
     def prompt(self):
         self.ShowModal()
@@ -126,47 +154,15 @@ class NewWidgetDialog(FormDialog):
     """...
 
     Instance variables:
-        title_sizer
-        title_label
-        title_entry
-        type_sizer
-        type_label
-        type_entry
-        ok
         window
     """
 
     def __init__(self):
         super(NewWidgetDialog, self).__init__("New Widget")
 
-        s0 = wx.BoxSizer(wx.VERTICAL)
-
-        self.title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.title_label = wx.StaticText(self, label = "Title")
-        self.title_entry = wx.TextCtrl(self)
-
-        self.title_sizer.AddSpacer((5, 0))
-        self.title_sizer.Add(self.title_label, flag = wx.ALIGN_CENTER)
-        self.title_sizer.AddSpacer((5, 0))
-        self.title_sizer.Add(self.title_entry)
-
-        self.type_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.type_label = wx.StaticText(self, label = "Type")
-        self.type_entry = wx.ComboBox(self)
-        self.type_entry.SetItems(sorted(WIDGETS.keys()))
-
-        self.type_sizer.AddSpacer((5, 0))
-        self.type_sizer.Add(self.type_label, flag = wx.ALIGN_CENTER)
-        self.type_sizer.AddSpacer((5, 0))
-        self.type_sizer.Add(self.type_entry)
-
-        self.ok = wx.Button(self, wx.ID_OK, "OK")
-        s0.Add(self.title_sizer)
-        s0.Add(self.type_sizer)
-        s0.Add(self.ok, flag = wx.ALIGN_RIGHT)
-
-        self.SetSizer(s0)
-        self.Fit()
+        self.add_text_field("Title")
+        self.add_menu_field("Type", sorted(WIDGETS.keys()))
+        self.init()
 
     def prompt(self, window):
         self.window = window
@@ -441,10 +437,10 @@ class MainFrame(wx.Frame):
 
     def OnNewWindowOk(self, e):
 
-        title = self.nwind.title_entry.GetValue()
+        title = self.nwind.fields["Title"]["entry"].GetValue()
 
-        if title not in self.app.windows:
-            self.nwind.EndModal(self.GetReturnCode())
+        if title not in self.windows:
+            self.nwind.EndModal(self.nwind.GetReturnCode())
             self.new_window(title)
         else:
             pass
@@ -452,13 +448,13 @@ class MainFrame(wx.Frame):
 
     def OnNewWidgetOk(self, e):
 
-        title = self.nwidd.title_entry.GetValue()
-        wtype = self.nwidd.type_entry.GetValue()
+        title = self.nwidd.fields["Title"]["entry"].GetValue()
+        wtype = self.nwidd.fields["Type"]["entry"].GetValue()
 
         all_widgets = self.nwidd.window.all_widgets()
 
         if (all_widgets is None) or (title not in all_widgets):
-            self.nwidd.EndModal(self.GetReturnCode())
+            self.nwidd.EndModal(self.nwidd.GetReturnCode())
 
             # Instantiate and install references to a new Widget.
             self.nwidd.window.widgets[wtype][title] = Widget(title)
